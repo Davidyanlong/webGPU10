@@ -2,14 +2,26 @@
 <head>
    <meta charset="utf-8">
    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-   <title>WebGPU Step-by-Step 1</title>
+   <title>WebGPU Step-by-Step 2</title>
    <meta name="description" content="">
    <meta name="viewport" content="width=device-width, initial-scale=1">
 </head>
 
 <body>
-    <h1>Check whether your browser support WebGPU or not:</h1>
-   <h2 id="id-gpu-check"></h2>
+   <div>
+      <h1>Create Triangle</h1>
+      <label>Color:</label>
+      <input type="text" id="id-color"
+       value="(1.0,1.0,1.0,1.0)">
+       <button id="id-btn">Change Color</button>
+       <br><br>
+       <canvas id="canvas-webgpu" 
+       width="640"
+       height="400"
+       style="border:1px solid red"
+       ></canvas>
+   </div>
+
    <script src="main.bundle.js"></script>
 </body>
 </html>
