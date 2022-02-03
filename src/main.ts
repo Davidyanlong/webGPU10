@@ -4,7 +4,7 @@ import { Shaders } from './shader';
 
 let requestId:any = null
 
-const createTriangle = async (color='(1.0, 0.0, 0.0, 1.0)')=>{
+const createTriangle = async ()=>{
     const checkgpu = CheckWebGPU();
     if(checkgpu.includes('not support WebGPU')){
         console.log(checkgpu)
@@ -24,12 +24,13 @@ const createTriangle = async (color='(1.0, 0.0, 0.0, 1.0)')=>{
     ];
     const presentationFormat = context.getPreferredFormat(adapter);
 
+    
     context.configure({
         device,
         format: presentationFormat,
         size: presentationSize,
       });
-      const shader = Shaders(color);
+      const shader = Shaders();
       const pipeline = device.createRenderPipeline({
         vertex: {
           module: device.createShaderModule({
@@ -84,7 +85,3 @@ const createTriangle = async (color='(1.0, 0.0, 0.0, 1.0)')=>{
 
 
 createTriangle();
-$('#id-btn').on('click',()=>{
-    const color = $('#id-color').val() as string
-    createTriangle(color)
-})
