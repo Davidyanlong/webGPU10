@@ -4,7 +4,7 @@ import { Shaders } from './shader';
 
 let requestId:any = null
 
-const createTriangle = async ()=>{
+const createPrimitive = async (primitiveType:string = 'point-list')=>{
     const checkgpu = CheckWebGPU();
     if(checkgpu.includes('not support WebGPU')){
         console.log(checkgpu)
@@ -30,6 +30,12 @@ const createTriangle = async ()=>{
         format: presentationFormat,
         size: presentationSize,
       });
+
+      let indexFormat
+      if(primitiveType==='line-strip'){
+        indexFormat = 'uint32'
+      }
+
       const shader = Shaders();
       const pipeline = device.createRenderPipeline({
         vertex: {
@@ -50,7 +56,8 @@ const createTriangle = async ()=>{
           ],
         },
         primitive: {
-          topology: 'triangle-list',
+          topology: primitiveType as GPUPrimitiveTopology,
+          ...(indexFormat?{stripIndexFormat:indexFormat as GPUIndexFormat}:{})
         },
       });
       if(requestId!==null) cancelAnimationFrame(requestId)
@@ -65,14 +72,14 @@ const createTriangle = async ()=>{
             {
               view: textureView,
               loadValue: { r: 0.5, g: 0.5, b: 0.8, a: 1.0 },
-              storeOp: 'store',
+              storeOp: 'store',  // 储存模式
             },
           ],
         };
     
         const passEncoder = commandEncoder.beginRenderPass(renderPassDescriptor);
         passEncoder.setPipeline(pipeline);
-        passEncoder.draw(3, 1, 0, 0);
+        passEncoder.draw(6);
         passEncoder.endPass();
     
         device.queue.submit([commandEncoder.finish()]);
@@ -84,4 +91,9 @@ const createTriangle = async ()=>{
 }
 
 
-createTriangle();
+createPrimitive();
+
+$('#id-primitive').on('change',(e)=>{
+  const primitiveType = $(e.target).val() as string
+  createPrimitive(primitiveType)
+})
