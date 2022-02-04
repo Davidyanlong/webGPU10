@@ -1,3 +1,17 @@
+export const CreateGPUBufferUnit = (device:GPUDevice, data:Uint32Array,
+    usageFlag:GPUBufferUsageFlags = GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST)=>{
+    const buffer = device.createBuffer({
+        size:data.byteLength,
+        usage:usageFlag,
+        mappedAtCreation:true   // 设置为true 可以通过getMappedRange 获取GPU中的缓存
+    })
+
+    new Uint32Array(buffer.getMappedRange()).set(data)
+    // 更改为unmap状态 GPU才可以使用
+    buffer.unmap()
+    return buffer
+}
+
 export const CreateGPUBuffer = (device:GPUDevice, data:Float32Array,
     usageFlag:GPUBufferUsageFlags = GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST)=>{
     const buffer = device.createBuffer({

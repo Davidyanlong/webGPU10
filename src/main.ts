@@ -1,4 +1,4 @@
-import { InitGPU,CreateGPUBuffer } from './helper';
+import { InitGPU,CreateGPUBuffer,CreateGPUBufferUnit } from './helper';
 import { Shaders } from './shader';
 
 let requestId:any = null
@@ -8,16 +8,19 @@ const CreateSquare = async ()=>{
 
        const vertexData = new Float32Array([
          // position      color
-         -0.5, -0.5,   1, 0, 0,    // a red 
-         0.5, -0.5,    0, 1, 0,    // b green
-         -0.5, 0.5,    1, 1, 0,    // d yellow 
-         -0.5, 0.5,    1, 1, 0,    // d yellow 
-         0.5, -0.5,    0, 1, 0,    // b green 
-         0.5, 0.5,     0, 0, 1     // c blue 
+         -0.5, -0.5,   1, 0, 0,    // a red    0
+         0.5, -0.5,    0, 1, 0,    // b green  1
+         0.5, 0.5,     0, 0, 1,    // c blue   2
+         -0.5, 0.5,    1, 1, 0,    // d yellow 3        
+       ])
+
+       const indexData =new Uint32Array([
+         0, 1, 3,
+         3, 1, 2
        ])
 
       const vertexBuffer = CreateGPUBuffer(device, vertexData)
-
+      const indexBuffer = CreateGPUBufferUnit(device,indexData)
       const shader = Shaders();
       const pipeline = device.createRenderPipeline({
         vertex: {
@@ -76,8 +79,9 @@ const CreateSquare = async ()=>{
         const passEncoder = commandEncoder.beginRenderPass(renderPassDescriptor);
         passEncoder.setPipeline(pipeline)
         passEncoder.setVertexBuffer(0, vertexBuffer)
+        passEncoder.setIndexBuffer(indexBuffer, "uint32")
 
-        passEncoder.draw(6)
+        passEncoder.drawIndexed(6)
         passEncoder.endPass();
     
         device.queue.submit([commandEncoder.finish()]);
