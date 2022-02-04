@@ -1,3 +1,36 @@
+
+export const cubeData1 = ()=>{
+    const vertexData = new Float32Array([
+        -1, -1, 1,     0, 0, 1,   // a  0
+         1, -1, 1,     1, 0, 1,   // b  1
+         1,  1, 1,     1, 1, 1,   // c  2
+        -1,  1, 1,     0, 1, 1,   // d  3
+        -1, -1,-1,     0, 0, 0,   // e  4
+         1, -1,-1,     1, 0, 0,   // f  5
+         1,  1,-1,     1, 1, 0,   // g  6
+        -1,  1,-1,     0, 1, 0,   // h  7
+    ])
+
+    const indexData = new Uint32Array([
+        //front
+        0, 1, 2, 2, 3, 0,
+        //right
+        1, 5, 6, 6, 2, 1,
+        //back
+        4, 7, 6, 6, 5, 4,
+        //left
+        0, 3, 7, 7, 4, 0,
+        //top
+        3, 2, 6, 6, 7, 3,
+        //bottom
+        0, 4, 5, 5, 1, 0
+    ])
+    return {vertexData, indexData}
+}
+
+
+
+
 export const cubeVertexSize = 4 * 10; // Byte size of one cube vertex.
 export const cubePositionOffset = 0;
 export const cubeColorOffset = 4 * 4; // Byte offset of cube vertex color attribute.

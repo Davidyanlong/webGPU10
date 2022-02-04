@@ -1,15 +1,10 @@
 import $ from 'jquery'
 import { InitGPU,CreateGPUBuffer,
   CreateAnimation,
-  CreateTransforms,CreateViewProjection } from './helper';
+  CreateTransforms,CreateViewProjection, CreateGPUBufferUnit } from './helper';
 import { Shaders } from './shader';
 import { 
-  cubeVertexArray,
-  cubeVertexSize,
-  cubePositionOffset,
-  cubeColorOffset,
-  cubeUVOffset,
-  cubeVertexCount 
+  cubeData1
 } from './vertex_data'
 import { mat4, vec3 } from 'gl-matrix'
 
@@ -19,9 +14,10 @@ const createCamera = require('3d-view-controls')
 const Create3DObject = async (isAnimation = true)=>{
        const {device, context, presentationFormat,canvas} = await InitGPU()
 
-       const vertexData = cubeVertexArray()
-
-      const vertexBuffer = CreateGPUBuffer(device, vertexData)
+       const vertexData = cubeData1()
+      const numberOfVertices = vertexData.indexData.length
+      const vertexBuffer = CreateGPUBuffer(device, vertexData.vertexData)
+      const indexBuffer = CreateGPUBufferUnit(device,vertexData.indexData)
       const shader = Shaders();
       const pipeline = device.createRenderPipeline({
         vertex: {
@@ -31,21 +27,16 @@ const Create3DObject = async (isAnimation = true)=>{
           entryPoint: 'main',
           buffers:[
             {
-              arrayStride: cubeVertexSize,
+              arrayStride: 24,
               attributes:[{
                 shaderLocation:0,
-                format:"float32x4",
-                offset:cubePositionOffset
+                format:"float32x3",
+                offset:0
               },
               {
                 shaderLocation:1,
-                format:"float32x4",
-                offset: cubeColorOffset
-              },
-              {
-                shaderLocation:2,
-                format:"float32x2",
-                offset: cubeUVOffset
+                format:"float32x3",
+                offset: 12
               }]
             },
           ]
@@ -146,9 +137,10 @@ const Create3DObject = async (isAnimation = true)=>{
           const passEncoder = commandEncoder.beginRenderPass(renderPassDescriptor);
           passEncoder.setPipeline(pipeline)
           passEncoder.setVertexBuffer(0, vertexBuffer)
+          passEncoder.setIndexBuffer(indexBuffer,'uint32')
+
           passEncoder.setBindGroup(0,uniformBindGroup)
-          
-          passEncoder.draw(cubeVertexCount)
+          passEncoder.drawIndexed(numberOfVertices)
           passEncoder.endPass();
       
           device.queue.submit([commandEncoder.finish()]);
