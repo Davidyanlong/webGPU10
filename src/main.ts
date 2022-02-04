@@ -1,4 +1,7 @@
-import { InitGPU,CreateGPUBuffer,CreateGPUBufferUnit,CreateTransforms,CreateViewProjection } from './helper';
+import $ from 'jquery'
+import { InitGPU,CreateGPUBuffer,
+  CreateAnimation,
+  CreateTransforms,CreateViewProjection } from './helper';
 import { Shaders } from './shader';
 import { 
   cubeVertexArray,
@@ -8,11 +11,12 @@ import {
   cubeUVOffset,
   cubeVertexCount 
 } from './vertex_data'
-import { mat4} from 'gl-matrix'
+import { mat4, vec3 } from 'gl-matrix'
 
-let requestId:any = null
+const createCamera = require('3d-view-controls')
 
-const CreateSquare = async ()=>{
+
+const Create3DObject = async (isAnimation = true)=>{
        const {device, context, presentationFormat,canvas} = await InitGPU()
 
        const vertexData = cubeVertexArray()
@@ -67,14 +71,18 @@ const CreateSquare = async ()=>{
           depthCompare:"less"
         }
       });
-      // if(requestId!==null) cancelAnimationFrame(requestId)
-      function frame() {
+    
         // Sample is no longer the active page.
         
         const modelMatrix = mat4.create()
+        let vMatrix = mat4.create()
+
         const mvpMatrix = mat4.create()
         const vp = CreateViewProjection(canvas.clientWidth/ canvas.clientHeight)
         const vpMatrix = vp.viewProjectionMatrix
+
+        let rotation =vec3.fromValues(0,0,0)
+        var camera = createCamera(canvas,vp.cameraOption)
 
         const uniformBuffer = device.createBuffer({
           size:64,
@@ -94,8 +102,8 @@ const CreateSquare = async ()=>{
             }
           ]
         })
-        const commandEncoder = device.createCommandEncoder();
-        const textureView = context.getCurrentTexture().createView();
+       
+        let textureView = context.getCurrentTexture().createView();
         const depthTexture = device.createTexture({
           size:[canvas.clientWidth * window.devicePixelRatio, canvas.clientHeight * window.devicePixelRatio, 1],
           format:"depth24plus",
@@ -120,25 +128,47 @@ const CreateSquare = async ()=>{
           }
         };
 
-        CreateTransforms(modelMatrix)
-        mat4.multiply(mvpMatrix,vpMatrix,modelMatrix)
-        device.queue.writeBuffer(uniformBuffer,0,mvpMatrix as ArrayBuffer)
-    
-        const passEncoder = commandEncoder.beginRenderPass(renderPassDescriptor);
-        passEncoder.setPipeline(pipeline)
-        passEncoder.setVertexBuffer(0, vertexBuffer)
-        passEncoder.setBindGroup(0,uniformBindGroup)
-        
-        passEncoder.draw(cubeVertexCount)
-        passEncoder.endPass();
-    
-        device.queue.submit([commandEncoder.finish()]);
-        // requestId =  requestAnimationFrame(frame);
-      }
-    
-      requestId = requestAnimationFrame(frame);
-    
+        function draw(){
+          if(!isAnimation){
+            if(camera.tick()){
+              const pMatrix =vp.projectionMatrix
+              vMatrix = camera.matrix
+              mat4.multiply(vpMatrix,pMatrix,vMatrix)
+            }
+          }
+          CreateTransforms(modelMatrix,vec3.fromValues(0,0,0),rotation)
+          mat4.multiply(mvpMatrix,vpMatrix,modelMatrix)
+          device.queue.writeBuffer(uniformBuffer,0,mvpMatrix as ArrayBuffer)
+          textureView = context.getCurrentTexture().createView();
+          //@ts-ignore
+          renderPassDescriptor.colorAttachments[0].view = textureView
+          const commandEncoder = device.createCommandEncoder();
+          const passEncoder = commandEncoder.beginRenderPass(renderPassDescriptor);
+          passEncoder.setPipeline(pipeline)
+          passEncoder.setVertexBuffer(0, vertexBuffer)
+          passEncoder.setBindGroup(0,uniformBindGroup)
+          
+          passEncoder.draw(cubeVertexCount)
+          passEncoder.endPass();
+      
+          device.queue.submit([commandEncoder.finish()]);
+        }
+
+      CreateAnimation(draw,rotation,isAnimation)    
+     
 }
 
 
-CreateSquare()
+Create3DObject()
+
+$('#id-radio input:radio').on('click',function(){
+  let val = $('input:checked').val()
+  if(val==='animation'){
+    Create3DObject(true)
+  }else{
+    Create3DObject(false)
+  }
+})
+
+
+

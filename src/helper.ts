@@ -1,5 +1,25 @@
 import { mat4, vec3 } from "gl-matrix"
 
+let requestAnimationFrameId:any = null
+export const CreateAnimation = (draw:any, rotation:vec3=vec3.fromValues(0,0,0),
+isAnimation = true)=>{
+    function step(){
+        if(isAnimation){
+            rotation[0]+=0.01
+            rotation[1]+=0.01
+            rotation[2]+=0.01
+        }else{
+            rotation=[0,0,0]
+        }
+        draw()
+        requestAnimationFrameId=  requestAnimationFrame(step)
+    }
+    if(requestAnimationFrameId){
+        cancelAnimationFrame(requestAnimationFrameId)
+    }
+    requestAnimationFrameId = requestAnimationFrame(step)
+}
+
 export const CreateTransforms=(modelMatrix:mat4, translation:vec3=[0, 0, 0],
     rotation:vec3=[0, 0, 0], scaling:vec3=[1, 1, 1])=>{
         const rotateXMat = mat4.create()

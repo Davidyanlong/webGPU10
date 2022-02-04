@@ -15,6 +15,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "3d-view-controls": "^2.2.2",
     "gl-matrix": "^3.4.3",
     "jquery": "^3.6.0"
   },
