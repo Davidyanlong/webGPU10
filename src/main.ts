@@ -1,40 +1,31 @@
-import $ from 'jquery';
-import { CheckWebGPU } from './helper';
+import { InitGPU,CreateGPUBuffer } from './helper';
 import { Shaders } from './shader';
 
 let requestId:any = null
 
-const createPrimitive = async (primitiveType:string = 'triangle-list')=>{
-    const checkgpu = CheckWebGPU();
-    if(checkgpu.includes('not support WebGPU')){
-        console.log(checkgpu)
-        throw('not support WebGPU')
-    }
-    const canvas = document.querySelector('#canvas-webgpu') as HTMLCanvasElement;
-    
-    const adapter = await navigator.gpu.requestAdapter() as GPUAdapter
-    const device = await adapter?.requestDevice() as GPUDevice
-    
-    const context = canvas.getContext('webgpu')as unknown  as GPUCanvasContext
-  
-    const devicePixelRatio = window.devicePixelRatio || 1;
-    const presentationSize = [
-        canvas.clientWidth * devicePixelRatio,
-        canvas.clientHeight * devicePixelRatio,
-    ];
-    const presentationFormat = context.getPreferredFormat(adapter);
+const CreateSquare = async ()=>{
+       const {device, context, presentationFormat} = await InitGPU()
 
-    
-    context.configure({
-        device,
-        format: presentationFormat,
-        size: presentationSize,
-      });
+       const vertexData = new Float32Array([
+         -0.5, -0.5,    // a
+         0.5, -0.5,     // b
+         -0.5, 0.5,     // d
+         -0.5, 0.5,     // d
+         0.5, -0.5,     // b
+         0.5, 0.5,      // c
+       ])
 
-      let indexFormat
-      if(primitiveType==='triangle-strip'){
-        indexFormat = 'uint32'
-      }
+       const colorData = new Float32Array([
+         1, 0, 0,    // a red
+         0, 1, 0,    // b green
+         1, 1, 0,    // d yellow
+         1, 1, 0,    // d yellow
+         0, 1, 0,    // b green
+         0, 0, 1     // c blue
+       ])
+
+      const vertexBuffer = CreateGPUBuffer(device, vertexData)
+      const colorBuffer = CreateGPUBuffer(device, colorData)
 
       const shader = Shaders();
       const pipeline = device.createRenderPipeline({
@@ -43,6 +34,24 @@ const createPrimitive = async (primitiveType:string = 'triangle-list')=>{
             code: shader.vertex,
           }),
           entryPoint: 'main',
+          buffers:[
+            {
+              arrayStride:8,
+              attributes:[{
+                shaderLocation:0,
+                format:"float32x2",
+                offset:0
+              }]
+            },
+            {
+              arrayStride:12,
+              attributes:[{
+                shaderLocation:1,
+                format:"float32x3",
+                offset:0
+              }]
+            },
+          ]
         },
         fragment: {
           module: device.createShaderModule({
@@ -56,11 +65,10 @@ const createPrimitive = async (primitiveType:string = 'triangle-list')=>{
           ],
         },
         primitive: {
-          topology: primitiveType as GPUPrimitiveTopology,
-          ...(indexFormat?{stripIndexFormat:indexFormat as GPUIndexFormat}:{})
+          topology: 'triangle-list',
         },
       });
-      if(requestId!==null) cancelAnimationFrame(requestId)
+      // if(requestId!==null) cancelAnimationFrame(requestId)
       function frame() {
         // Sample is no longer the active page.
     
@@ -78,12 +86,15 @@ const createPrimitive = async (primitiveType:string = 'triangle-list')=>{
         };
     
         const passEncoder = commandEncoder.beginRenderPass(renderPassDescriptor);
-        passEncoder.setPipeline(pipeline);
-        passEncoder.draw(9);
+        passEncoder.setPipeline(pipeline)
+        passEncoder.setVertexBuffer(0, vertexBuffer)
+        passEncoder.setVertexBuffer(1, colorBuffer)
+
+        passEncoder.draw(6)
         passEncoder.endPass();
     
         device.queue.submit([commandEncoder.finish()]);
-        requestId =  requestAnimationFrame(frame);
+        // requestId =  requestAnimationFrame(frame);
       }
     
       requestId = requestAnimationFrame(frame);
@@ -91,9 +102,4 @@ const createPrimitive = async (primitiveType:string = 'triangle-list')=>{
 }
 
 
-createPrimitive();
-
-$('#id-primitive').on('change',(e)=>{
-  const primitiveType = $(e.target).val() as string
-  createPrimitive(primitiveType)
-})
+CreateSquare()
