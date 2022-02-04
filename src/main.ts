@@ -59,6 +59,7 @@ const CreateSquare = async ()=>{
         },
         primitive: {
           topology: 'triangle-list',
+          cullMode:"back"   // 优化性能
         },
         depthStencil:{
           format:"depth24plus",
