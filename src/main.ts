@@ -4,7 +4,7 @@ import { Shaders } from './shader';
 
 let requestId:any = null
 
-const createPrimitive = async (primitiveType:string = 'point-list')=>{
+const createPrimitive = async (primitiveType:string = 'triangle-list')=>{
     const checkgpu = CheckWebGPU();
     if(checkgpu.includes('not support WebGPU')){
         console.log(checkgpu)
@@ -32,7 +32,7 @@ const createPrimitive = async (primitiveType:string = 'point-list')=>{
       });
 
       let indexFormat
-      if(primitiveType==='line-strip'){
+      if(primitiveType==='triangle-strip'){
         indexFormat = 'uint32'
       }
 
@@ -79,7 +79,7 @@ const createPrimitive = async (primitiveType:string = 'point-list')=>{
     
         const passEncoder = commandEncoder.beginRenderPass(renderPassDescriptor);
         passEncoder.setPipeline(pipeline);
-        passEncoder.draw(6);
+        passEncoder.draw(9);
         passEncoder.endPass();
     
         device.queue.submit([commandEncoder.finish()]);
