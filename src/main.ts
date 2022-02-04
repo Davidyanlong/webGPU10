@@ -7,25 +7,16 @@ const CreateSquare = async ()=>{
        const {device, context, presentationFormat} = await InitGPU()
 
        const vertexData = new Float32Array([
-         -0.5, -0.5,    // a
-         0.5, -0.5,     // b
-         -0.5, 0.5,     // d
-         -0.5, 0.5,     // d
-         0.5, -0.5,     // b
-         0.5, 0.5,      // c
-       ])
-
-       const colorData = new Float32Array([
-         1, 0, 0,    // a red
-         0, 1, 0,    // b green
-         1, 1, 0,    // d yellow
-         1, 1, 0,    // d yellow
-         0, 1, 0,    // b green
-         0, 0, 1     // c blue
+         // position      color
+         -0.5, -0.5,   1, 0, 0,    // a red 
+         0.5, -0.5,    0, 1, 0,    // b green
+         -0.5, 0.5,    1, 1, 0,    // d yellow 
+         -0.5, 0.5,    1, 1, 0,    // d yellow 
+         0.5, -0.5,    0, 1, 0,    // b green 
+         0.5, 0.5,     0, 0, 1     // c blue 
        ])
 
       const vertexBuffer = CreateGPUBuffer(device, vertexData)
-      const colorBuffer = CreateGPUBuffer(device, colorData)
 
       const shader = Shaders();
       const pipeline = device.createRenderPipeline({
@@ -36,19 +27,16 @@ const CreateSquare = async ()=>{
           entryPoint: 'main',
           buffers:[
             {
-              arrayStride:8,
+              arrayStride: 4*(2+3),
               attributes:[{
                 shaderLocation:0,
                 format:"float32x2",
                 offset:0
-              }]
-            },
-            {
-              arrayStride:12,
-              attributes:[{
+              },
+              {
                 shaderLocation:1,
                 format:"float32x3",
-                offset:0
+                offset:8
               }]
             },
           ]
@@ -88,7 +76,6 @@ const CreateSquare = async ()=>{
         const passEncoder = commandEncoder.beginRenderPass(renderPassDescriptor);
         passEncoder.setPipeline(pipeline)
         passEncoder.setVertexBuffer(0, vertexBuffer)
-        passEncoder.setVertexBuffer(1, colorBuffer)
 
         passEncoder.draw(6)
         passEncoder.endPass();
