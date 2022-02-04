@@ -1,26 +1,23 @@
-import { InitGPU,CreateGPUBuffer,CreateGPUBufferUnit } from './helper';
+import { InitGPU,CreateGPUBuffer,CreateGPUBufferUnit,CreateTransforms,CreateViewProjection } from './helper';
 import { Shaders } from './shader';
+import { 
+  cubeVertexArray,
+  cubeVertexSize,
+  cubePositionOffset,
+  cubeColorOffset,
+  cubeUVOffset,
+  cubeVertexCount 
+} from './vertex_data'
+import { mat4} from 'gl-matrix'
 
 let requestId:any = null
 
 const CreateSquare = async ()=>{
-       const {device, context, presentationFormat} = await InitGPU()
+       const {device, context, presentationFormat,canvas} = await InitGPU()
 
-       const vertexData = new Float32Array([
-         // position      color
-         -0.5, -0.5,   1, 0, 0,    // a red    0
-         0.5, -0.5,    0, 1, 0,    // b green  1
-         0.5, 0.5,     0, 0, 1,    // c blue   2
-         -0.5, 0.5,    1, 1, 0,    // d yellow 3        
-       ])
-
-       const indexData =new Uint32Array([
-         0, 1, 3,
-         3, 1, 2
-       ])
+       const vertexData = cubeVertexArray()
 
       const vertexBuffer = CreateGPUBuffer(device, vertexData)
-      const indexBuffer = CreateGPUBufferUnit(device,indexData)
       const shader = Shaders();
       const pipeline = device.createRenderPipeline({
         vertex: {
@@ -30,16 +27,21 @@ const CreateSquare = async ()=>{
           entryPoint: 'main',
           buffers:[
             {
-              arrayStride: 4*(2+3),
+              arrayStride: cubeVertexSize,
               attributes:[{
                 shaderLocation:0,
-                format:"float32x2",
-                offset:0
+                format:"float32x4",
+                offset:cubePositionOffset
               },
               {
                 shaderLocation:1,
-                format:"float32x3",
-                offset:8
+                format:"float32x4",
+                offset: cubeColorOffset
+              },
+              {
+                shaderLocation:2,
+                format:"float32x2",
+                offset: cubeUVOffset
               }]
             },
           ]
@@ -58,13 +60,47 @@ const CreateSquare = async ()=>{
         primitive: {
           topology: 'triangle-list',
         },
+        depthStencil:{
+          format:"depth24plus",
+          depthWriteEnabled:true,
+          depthCompare:"less"
+        }
       });
       // if(requestId!==null) cancelAnimationFrame(requestId)
       function frame() {
         // Sample is no longer the active page.
-    
+        
+        const modelMatrix = mat4.create()
+        const mvpMatrix = mat4.create()
+        const vp = CreateViewProjection(canvas.clientWidth/ canvas.clientHeight)
+        const vpMatrix = vp.viewProjectionMatrix
+
+        const uniformBuffer = device.createBuffer({
+          size:64,
+          usage:GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+        })
+
+        const uniformBindGroup = device.createBindGroup({
+          layout:pipeline.getBindGroupLayout(0),
+          entries:[
+            {
+              binding:0,
+              resource:{
+                buffer:uniformBuffer,
+                offset:0,
+                size:64
+              }
+            }
+          ]
+        })
         const commandEncoder = device.createCommandEncoder();
         const textureView = context.getCurrentTexture().createView();
+        const depthTexture = device.createTexture({
+          size:[canvas.clientWidth * window.devicePixelRatio, canvas.clientHeight * window.devicePixelRatio, 1],
+          format:"depth24plus",
+          usage:GPUTextureUsage.RENDER_ATTACHMENT
+        })
+
     
         const renderPassDescriptor: GPURenderPassDescriptor = {
           colorAttachments: [
@@ -74,14 +110,25 @@ const CreateSquare = async ()=>{
               storeOp: 'store',  // 储存模式
             },
           ],
+          depthStencilAttachment:{
+            view:depthTexture.createView(),
+            depthLoadValue:1.0,
+            depthStoreOp:'store',
+            stencilLoadValue:0,
+            stencilStoreOp:'store'
+          }
         };
+
+        CreateTransforms(modelMatrix)
+        mat4.multiply(mvpMatrix,vpMatrix,modelMatrix)
+        device.queue.writeBuffer(uniformBuffer,0,mvpMatrix as ArrayBuffer)
     
         const passEncoder = commandEncoder.beginRenderPass(renderPassDescriptor);
         passEncoder.setPipeline(pipeline)
         passEncoder.setVertexBuffer(0, vertexBuffer)
-        passEncoder.setIndexBuffer(indexBuffer, "uint32")
-
-        passEncoder.drawIndexed(6)
+        passEncoder.setBindGroup(0,uniformBindGroup)
+        
+        passEncoder.draw(cubeVertexCount)
         passEncoder.endPass();
     
         device.queue.submit([commandEncoder.finish()]);

@@ -1,3 +1,53 @@
+import { mat4, vec3 } from "gl-matrix"
+
+export const CreateTransforms=(modelMatrix:mat4, translation:vec3=[0, 0, 0],
+    rotation:vec3=[0, 0, 0], scaling:vec3=[1, 1, 1])=>{
+        const rotateXMat = mat4.create()
+        const rotateYMat = mat4.create()
+        const rotateZMat = mat4.create()
+        const translationMat = mat4.create()
+        const scaleMat = mat4.create()
+
+        mat4.fromTranslation(translationMat, translation)
+        mat4.fromXRotation(rotateXMat, rotation[0])
+        mat4.fromYRotation(rotateYMat, rotation[1])
+        mat4.fromZRotation(rotateZMat, rotation[2])
+        mat4.fromScaling(scaleMat, scaling)
+
+        mat4.multiply(modelMatrix,rotateXMat,scaleMat)
+        mat4.multiply(modelMatrix,rotateYMat,modelMatrix)
+        mat4.multiply(modelMatrix,rotateZMat,modelMatrix)
+        mat4.multiply(modelMatrix,translationMat,modelMatrix)
+
+}
+
+
+export const CreateViewProjection=(respectRatio = 1.0, cameraPosition:vec3=[2, 2, 4], lookDirection:vec3=[0, 0, 0], 
+    upDirection:vec3=[0, 1, 0])=>{
+        const viewMatrix = mat4.create()
+        const projectionMatrix = mat4.create()
+        const viewProjectionMatrix = mat4.create()
+        const PI2 = Math.PI * 2
+        mat4.perspective(projectionMatrix, PI2/5, respectRatio,0.1, 100.0)
+        mat4.lookAt(viewMatrix,cameraPosition,lookDirection,upDirection)
+        mat4.multiply(viewProjectionMatrix, projectionMatrix, viewMatrix)
+
+        const cameraOption = {
+            eye:cameraPosition,
+            center:lookDirection,
+            zoomMax:100,
+            zoomSpeed:2
+        }
+
+        return {
+            viewMatrix,
+            projectionMatrix,
+            viewProjectionMatrix,
+            cameraOption
+        }
+
+}
+
 export const CreateGPUBufferUnit = (device:GPUDevice, data:Uint32Array,
     usageFlag:GPUBufferUsageFlags = GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST)=>{
     const buffer = device.createBuffer({
